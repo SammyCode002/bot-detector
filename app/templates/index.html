@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Detector — AI-Powered Account Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Ambient background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <circle cx="12" cy="11" r="3"/>
+                    </svg>
+                </div>
+                <span class="logo-text">Bot Detector</span>
+            </div>
+            <div class="header-stats">
+                <div class="stat-chip">
+                    <span class="stat-dot stat-dot-green"></span>
+                    Model Accuracy: <strong>{{ "%.1f"|format(meta.accuracy * 100) }}%</strong>
+                </div>
+                <div class="stat-chip">
+                    F1 Score: <strong>{{ "%.1f"|format(meta.f1_score * 100) }}%</strong>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Input Panel -->
+            <section class="panel input-panel">
+                <div class="panel-header">
+                    <h2>Account Analysis</h2>
+                    <p class="panel-subtitle">Enter account details to analyze</p>
+                </div>
+
+                <form id="analyze-form" class="form">
+                    <!-- Quick Mode Toggle -->
+                    <div class="mode-toggle">
+                        <button type="button" class="mode-btn active" data-mode="simple">Simple</button>
+                        <button type="button" class="mode-btn" data-mode="advanced">Advanced</button>
+                    </div>
+
+                    <!-- Simple Mode Fields -->
+                    <div id="simple-fields">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" placeholder="e.g. bot_account_2847" class="input">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Account Age <span class="unit">(days)</span></label>
+                                <input type="number" name="account_age_days" placeholder="365" class="input" value="365">
+                            </div>
+                            <div class="form-group">
+                                <label>Total Tweets</label>
+                                <input type="number" name="total_tweets" placeholder="1500" class="input" value="1500">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Followers</label>
+                                <input type="number" name="followers_count" placeholder="500" class="input" value="500">
+                            </div>
+                            <div class="form-group">
+                                <label>Following</label>
+                                <input type="number" name="following_count" placeholder="300" class="input" value="300">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Total Favorites</label>
+                                <input type="number" name="favorites_count" placeholder="3000" class="input" value="3000">
+                            </div>
+                            <div class="form-group">
+                                <label>Retweet Ratio <span class="unit">(0-1)</span></label>
+                                <input type="number" name="retweet_ratio" placeholder="0.3" step="0.01" min="0" max="1" class="input" value="0.3">
+                            </div>
+                        </div>
+
+                        <div class="checkbox-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_profile_image" checked> Profile Image
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_bio" checked> Has Bio
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_verified"> Verified
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Mode Fields (hidden by default) -->
+                    <div id="advanced-fields" class="hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Bio Length <span class="unit">(chars)</span></label>
+                                <input type="number" name="bio_length" placeholder="80" class="input" value="80">
+                            </div>
+                            <div class="form-group">
+                                <label>Listed Count</label>
+                                <input type="number" name="listed_count" placeholder="5" class="input" value="5">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Posting Hour Variance</label>
+                                <input type="number" name="avg_tweets_per_hour_variance" placeholder="5.0" step="0.1" class="input" value="5.0">
+                            </div>
+                            <div class="form-group">
+                                <label>Unique Sources</label>
+                                <input type="number" name="unique_sources_count" placeholder="2" class="input" value="2">
+                            </div>
+                        </div>
+
+                        <div class="checkbox-row">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_url"> URL in Profile
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="has_default_profile"> Default Profile
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-analyze" id="analyze-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        Analyze Account
+                    </button>
+
+                    <!-- Preset buttons -->
+                    <div class="presets">
+                        <span class="presets-label">Try a preset:</span>
+                        <button type="button" class="preset-btn" data-preset="human">👤 Normal User</button>
+                        <button type="button" class="preset-btn" data-preset="spam">🤖 Spam Bot</button>
+                        <button type="button" class="preset-btn" data-preset="farm">🌾 Follower Farm</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Results Panel -->
+            <section class="panel results-panel" id="results-panel">
+                <!-- Empty state -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <circle cx="12" cy="11" r="3"/>
+                        </svg>
+                    </div>
+                    <h3>No Analysis Yet</h3>
+                    <p>Enter account details and click "Analyze" to get started.</p>
+                </div>
+
+                <!-- Results (hidden until analysis) -->
+                <div class="results-content hidden" id="results-content">
+                    <!-- Verdict -->
+                    <div class="verdict-card" id="verdict-card">
+                        <div class="verdict-badge" id="verdict-badge">
+                            <span class="verdict-icon" id="verdict-icon"></span>
+                        </div>
+                        <div class="verdict-text">
+                            <h2 id="verdict-label"></h2>
+                            <p id="verdict-confidence"></p>
+                        </div>
+                    </div>
+
+                    <!-- Probability gauge -->
+                    <div class="gauge-section">
+                        <div class="gauge-labels">
+                            <span>Human</span>
+                            <span>Bot</span>
+                        </div>
+                        <div class="gauge-track">
+                            <div class="gauge-fill" id="gauge-fill"></div>
+                            <div class="gauge-marker" id="gauge-marker"></div>
+                        </div>
+                        <div class="gauge-values">
+                            <span id="human-pct">—</span>
+                            <span id="bot-pct">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Red Flags -->
+                    <div class="flags-section" id="flags-section">
+                        <h3>🚩 Red Flags</h3>
+                        <div class="flags-list" id="flags-list"></div>
+                    </div>
+
+                    <!-- Feature Breakdown -->
+                    <div class="features-section">
+                        <h3>Feature Analysis</h3>
+                        <div class="features-grid" id="features-grid"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built with Random Forest (scikit-learn) · 5,000 training samples · 20 features</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
