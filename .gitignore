@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated model files — run train.py to recreate
+model/bot_model.pkl
+model/scaler.pkl
+model/model_meta.json
+
+# Generated dataset — run generate_dataset.py to recreate
+data/dataset.csv
+
+# Environments
+.venv/
+venv/
+env/
+
+# Misc
+.env
+.DS_Store
+*.egg-info/
+dist/
+build/

@@ -24,18 +24,18 @@ A machine learning web app that analyzes social media account features to determ
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/bot-detector.git
+git clone https://github.com/SammyCode002/bot-detector.git
 cd bot-detector
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Generate training data & train the model
-python data/generate_dataset.py
-python model/train.py
+py data/generate_dataset.py
+py model/train.py
 
 # Run the web app
-python app/app.py
+py run.py
 ```
 
 Open **http://localhost:5000** in your browser.

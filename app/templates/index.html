@@ -147,12 +147,20 @@
                         Analyze Account
                     </button>
 
+                    <!-- Error banner -->
+                    <div class="error-banner hidden" id="error-banner">
+                        <span class="error-icon">⚠</span>
+                        <span id="error-message">Something went wrong.</span>
+                        <button type="button" class="error-close" id="error-close">✕</button>
+                    </div>
+
                     <!-- Preset buttons -->
                     <div class="presets">
                         <span class="presets-label">Try a preset:</span>
                         <button type="button" class="preset-btn" data-preset="human">👤 Normal User</button>
                         <button type="button" class="preset-btn" data-preset="spam">🤖 Spam Bot</button>
                         <button type="button" class="preset-btn" data-preset="farm">🌾 Follower Farm</button>
+                        <button type="button" class="preset-btn" data-preset="content_bot">📢 Content Bot</button>
                     </div>
                 </form>
             </section>
@@ -214,6 +222,12 @@
                 </div>
             </section>
         </main>
+
+        <!-- Recent Analyses History -->
+        <section class="history-section hidden" id="history-section">
+            <h3 class="history-title">Recent Analyses</h3>
+            <div class="history-list" id="history-list"></div>
+        </section>
 
         <!-- Footer -->
         <footer class="footer">

@@ -1,8 +1,8 @@
 /**
  * app.js - Bot Detector frontend logic
- * 
+ *
  * Handles form submission, API calls, preset loading,
- * and result rendering with animations.
+ * result rendering, input validation, and analysis history.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,24 +10,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const analyzeBtn = document.getElementById('analyze-btn');
     const emptyState = document.getElementById('empty-state');
     const resultsContent = document.getElementById('results-content');
-    const simpleFields = document.getElementById('simple-fields');
     const advancedFields = document.getElementById('advanced-fields');
+    const errorBanner = document.getElementById('error-banner');
+    const errorMessage = document.getElementById('error-message');
+    const errorClose = document.getElementById('error-close');
 
-    // Mode toggle
+    // ---- History ----
+    const analysisHistory = [];
+    const MAX_HISTORY = 3;
+
+    // ---- Error Banner ----
+    function showError(msg) {
+        errorMessage.textContent = msg;
+        errorBanner.classList.remove('hidden');
+    }
+
+    function hideError() {
+        errorBanner.classList.add('hidden');
+    }
+
+    errorClose.addEventListener('click', hideError);
+
+    // ---- Mode Toggle ----
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            if (btn.dataset.mode === 'advanced') {
-                advancedFields.classList.remove('hidden');
-            } else {
-                advancedFields.classList.add('hidden');
-            }
+            advancedFields.classList.toggle('hidden', btn.dataset.mode !== 'advanced');
         });
     });
 
-    // Preset buttons
+    // ---- Presets ----
     const presets = {
         human: {
             username: 'sarah_designs',
@@ -83,6 +96,24 @@ document.addEventListener('DOMContentLoaded', () => {
             has_url: false,
             has_default_profile: true,
         },
+        content_bot: {
+            username: 'NewsBot_AutoFeed',
+            account_age_days: 300,
+            total_tweets: 48000,
+            followers_count: 2400,
+            following_count: 190,
+            favorites_count: 320,
+            retweet_ratio: 0.88,
+            has_profile_image: true,
+            has_bio: true,
+            is_verified: false,
+            bio_length: 42,
+            listed_count: 9,
+            avg_tweets_per_hour_variance: 0.7,
+            unique_sources_count: 1,
+            has_url: true,
+            has_default_profile: false,
+        },
     };
 
     document.querySelectorAll('.preset-btn').forEach(btn => {
@@ -90,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const preset = presets[btn.dataset.preset];
             if (!preset) return;
 
-            // Fill simple fields
             setInput('username', preset.username);
             setInput('account_age_days', preset.account_age_days);
             setInput('total_tweets', preset.total_tweets);
@@ -101,8 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setCheckbox('has_profile_image', preset.has_profile_image);
             setCheckbox('has_bio', preset.has_bio);
             setCheckbox('is_verified', preset.is_verified);
-
-            // Fill advanced fields
             setInput('bio_length', preset.bio_length);
             setInput('listed_count', preset.listed_count);
             setInput('avg_tweets_per_hour_variance', preset.avg_tweets_per_hour_variance);
@@ -110,16 +138,35 @@ document.addEventListener('DOMContentLoaded', () => {
             setCheckbox('has_url', preset.has_url);
             setCheckbox('has_default_profile', preset.has_default_profile);
 
-            // Auto-submit
             form.dispatchEvent(new Event('submit'));
         });
     });
 
-    // Form submission
+    // ---- Input Validation ----
+    function validateFormData(data) {
+        if (data.account_age_days < 1) return 'Account age must be at least 1 day.';
+        if (data.followers_count < 0) return 'Followers cannot be negative.';
+        if (data.following_count < 1) return 'Following count must be at least 1.';
+        if (data.total_tweets < 0) return 'Total tweets cannot be negative.';
+        if (data.favorites_count < 0) return 'Favorites cannot be negative.';
+        if (data.retweet_ratio < 0 || data.retweet_ratio > 1) return 'Retweet ratio must be between 0 and 1.';
+        if (data.bio_length < 0) return 'Bio length cannot be negative.';
+        if (data.listed_count < 0) return 'Listed count cannot be negative.';
+        if (data.unique_sources_count < 0) return 'Unique sources cannot be negative.';
+        return null;
+    }
+
+    // ---- Form Submission ----
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        hideError();
 
         const data = collectFormData();
+        const validationError = validateFormData(data);
+        if (validationError) {
+            showError(validationError);
+            return;
+        }
 
         analyzeBtn.classList.add('loading');
         analyzeBtn.textContent = '';
@@ -134,14 +181,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (result.error) {
-                alert('Error: ' + result.error);
+                showError('Analysis failed: ' + result.error);
                 return;
             }
 
             renderResults(result);
+            addToHistory(result, data);
 
         } catch (err) {
-            alert('Failed to connect to server: ' + err.message);
+            showError('Could not reach server. Make sure the app is running.');
         } finally {
             analyzeBtn.classList.remove('loading');
             analyzeBtn.innerHTML = `
@@ -153,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ---- Collect Form Data ----
     function collectFormData() {
         const get = (name) => {
             const el = form.querySelector(`[name="${name}"]`);
@@ -181,14 +230,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // ---- Render Results ----
     function renderResults(result) {
         emptyState.classList.add('hidden');
         resultsContent.classList.remove('hidden');
 
-        // Verdict
-        const verdictCard = document.getElementById('verdict-card');
         const isBot = result.is_bot;
 
+        // Verdict
+        const verdictCard = document.getElementById('verdict-card');
         verdictCard.className = `verdict-card ${isBot ? 'bot' : 'human'}`;
         document.getElementById('verdict-icon').textContent = isBot ? '🤖' : '👤';
         document.getElementById('verdict-label').textContent = isBot ? 'Likely Bot' : 'Likely Human';
@@ -200,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const gaugeFill = document.getElementById('gauge-fill');
         const gaugeMarker = document.getElementById('gauge-marker');
 
-        // Reset for animation
         gaugeFill.style.width = '0%';
         gaugeMarker.style.left = '0%';
 
@@ -226,9 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const flagsSection = document.getElementById('flags-section');
         const flagsList = document.getElementById('flags-list');
         flagsList.innerHTML = '';
+        flagsSection.classList.remove('hidden');
 
         if (result.flags && result.flags.length > 0) {
-            flagsSection.classList.remove('hidden');
             result.flags.forEach((flag, i) => {
                 const el = document.createElement('div');
                 el.className = 'flag-item';
@@ -243,7 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 flagsList.appendChild(el);
             });
         } else {
-            flagsSection.classList.remove('hidden');
             flagsList.innerHTML = '<div class="no-flags">✓ No red flags detected. Account appears normal.</div>';
         }
 
@@ -253,8 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const maxImportance = Math.max(...result.top_features.map(f => f.importance));
 
+        // High-importance bot signal features get a different bar color
+        const botSignalFeatures = new Set([
+            'avg_tweets_per_hour_variance', 'retweet_ratio', 'username_digit_ratio',
+            'tweets_per_day', 'unique_sources_count', 'has_default_profile',
+        ]);
+
         result.top_features.forEach((feat, i) => {
             const barWidth = (feat.importance / maxImportance) * 100;
+            const isSignal = botSignalFeatures.has(feat.feature);
             const row = document.createElement('div');
             row.className = 'feature-row';
             row.style.animationDelay = `${i * 0.05}s`;
@@ -262,12 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="feature-name">${feat.label}</span>
                 <span class="feature-value">${formatValue(feat.value)}</span>
                 <div class="feature-bar-track">
-                    <div class="feature-bar-fill" style="width: 0%"></div>
+                    <div class="feature-bar-fill${isSignal ? ' bot-signal' : ''}" style="width: 0%"></div>
                 </div>
             `;
             grid.appendChild(row);
 
-            // Animate bar
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     row.querySelector('.feature-bar-fill').style.width = barWidth + '%';
@@ -275,16 +329,52 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Scroll to results on mobile
         if (window.innerWidth <= 900) {
             resultsContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
+    // ---- History ----
+    function addToHistory(result, formData) {
+        analysisHistory.unshift({
+            name: formData.username || 'Unknown',
+            isBot: result.is_bot,
+            confidence: result.confidence,
+            botProbability: result.bot_probability,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+        if (analysisHistory.length > MAX_HISTORY) analysisHistory.pop();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const section = document.getElementById('history-section');
+        const list = document.getElementById('history-list');
+
+        section.classList.remove('hidden');
+        list.innerHTML = '';
+
+        analysisHistory.forEach((entry, i) => {
+            const item = document.createElement('div');
+            item.className = `history-item ${entry.isBot ? 'bot' : 'human'}`;
+            item.style.animationDelay = `${i * 0.06}s`;
+            item.innerHTML = `
+                <span class="history-verdict-icon">${entry.isBot ? '🤖' : '👤'}</span>
+                <div class="history-info">
+                    <div class="history-name">${entry.name}</div>
+                    <div class="history-meta">${entry.isBot ? 'Bot' : 'Human'} · ${entry.time}</div>
+                </div>
+                <span class="history-confidence">${entry.confidence}%</span>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // ---- Helpers ----
     function formatValue(val) {
         if (typeof val === 'number') {
             if (Number.isInteger(val)) return val.toLocaleString();
-            return val.toFixed(4);
+            return parseFloat(val.toFixed(4)).toString();
         }
         return val;
     }
