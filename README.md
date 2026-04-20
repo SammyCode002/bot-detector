@@ -1,4 +1,4 @@
-# 🛡 Bot Detector — AI-Powered Social Media Account Analysis
+# 🛡 Bot Detector - AI-Powered Social Media Account Analysis
 
 A machine learning web app that analyzes social media account features to determine whether an account is a bot or a real human. Uses a Random Forest classifier trained on 20 behavioral features.
 
